@@ -9,6 +9,10 @@ CONFIG_FANUC = {
         "port":5001,
         "host_ip":"viz.campus.nist.gov",
         }
+CONFIG_MOTOMAN = {
+    "port": 5501,
+    "host_ip": "viz.campus.nist.gov"
+}
 CONFIG_TEACH = {
         "port":6001,
         "host_ip":"viz.campus.nist.gov",
@@ -20,6 +24,8 @@ class AntVisionUtility():
             self.config = CONFIG_FANUC
         elif config == "CONFIG_TEACH":
             self.config = CONFIG_TEACH
+        elif config == "CONFIG_MOTOMAN":
+            self.config = CONFIG_MOTOMAN
         self.buffer = b''
     
     def get_object_locations(self):

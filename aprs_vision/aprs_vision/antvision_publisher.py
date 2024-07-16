@@ -25,7 +25,7 @@ class AntVisionPublisher(Node):
             self.antvision_object_publisher_.publish(self.objects)
 
     def build_objects_msg(self):
-        object_locations = AntVisionUtility("CONFIG_FANUC").get_object_locations()
+        object_locations = AntVisionUtility("CONFIG_MOTOMAN").get_object_locations()
         if not object_locations:
             return
 
@@ -49,7 +49,7 @@ class AntVisionPublisher(Node):
                 x_offset = 0.0 
                 y_offset = 0.0
 
-            object.pose_stamped.header.frame_id = "fanuc_base_link"
+            object.pose_stamped.header.frame_id = "motoman_base_link"
             object.pose_stamped.pose.position.x = x + x_offset
             object.pose_stamped.pose.position.y = y + y_offset
             if object.object_type == Object.PART:
