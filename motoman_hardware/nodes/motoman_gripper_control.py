@@ -8,7 +8,7 @@ import time
 
 CONFIG = {
         "port":12123,
-        "host_ip":"192.168.1.34"
+        "host_ip":"192.168.1.33"
         }
 
 class GripperUtility:
