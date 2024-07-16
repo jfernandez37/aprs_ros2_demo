@@ -13,18 +13,13 @@
     <!-- Inclue gripper macro -->
     <!-- <xacro:include filename="$(find aprs_description)/urdf/vacuum_gripper/vacuum_grippper_macro.xacro"/> -->
 
-    <xacro:property name="initial_positions_file" default="$(find aprs_description)/config/motoman_initial_positions.yaml"/>
-
     <!-- Run motoman macro -->
     <xacro:motoman_sia20d
         parent="${parent}">
     </xacro:motoman_sia20d>
 
     <!-- Run motoman macro -->
-    <xacro:aprs_motoman_ros2_control
-      name="motoman"
-      initial_positions="${xacro.load_yaml(initial_positions_file)}">
-    </xacro:aprs_motoman_ros2_control>
+    <xacro:aprs_motoman_ros2_control name="motoman"/>
 
     <!-- Run gripper macro -->
     <!-- <xacro:vacuum_gripper
