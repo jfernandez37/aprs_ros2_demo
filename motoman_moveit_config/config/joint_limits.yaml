@@ -1,22 +1,22 @@
-joint_limits:
-  joint_b:
+joint_2imits:
+  joint_5:
     has_acceleration_limits: true
     max_acceleration: 5.0
-  joint_e:
+  joint_7:
     has_acceleration_limits: true
     max_acceleration: 5.0
-  joint_l:
+  joint_2:
     has_acceleration_limits: true
     max_acceleration: 5.0
-  joint_r:
+  joint_4:
     has_acceleration_limits: true
     max_acceleration: 5.0
-  joint_u:
+  joint_3:
     has_acceleration_limits: true
     max_acceleration: 5.0
-  joint_s:
+  joint_1:
     has_acceleration_limits: true
     max_acceleration: 5.0
-  joint_t:
+  joint_6:
     has_acceleration_limits: true
     max_acceleration: 5.0

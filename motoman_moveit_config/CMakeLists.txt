@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(aprs_motoman_moveit_config)
+project(motoman_moveit_config)
 
 find_package(ament_cmake REQUIRED)
 

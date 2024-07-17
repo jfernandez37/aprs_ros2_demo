@@ -50,8 +50,8 @@
 			<child link = "motoman_base_link"/>
       	</joint>
 
-		<joint name="joint_s" type="revolute">
-			<xacro:origin_joint_s/>
+		<joint name="joint_1" type="revolute">
+			<xacro:origin_joint_1/>
 			<parent link="motoman_base_link"/>
 			<child  link="link_s"/>
 			<axis xyz="0 1 0"/>
@@ -77,9 +77,9 @@
 			</collision>
 		</link>
 
-		<!-- joint_l (link_s | joint_l) -->
-		<joint name="joint_l" type="revolute">
-			<xacro:origin_joint_l/>
+		<!-- joint_2 (link_s | joint_2) -->
+		<joint name="joint_2" type="revolute">
+			<xacro:origin_joint_2/>
 			<parent link="link_s"/>
 			<child  link="link_l"/>
 			<axis xyz="0 0 1"/>
@@ -104,9 +104,9 @@
 			</collision>
 		</link>
 
-		<!-- joint_e (link_l | joint_e) -->
-		<joint name="joint_e" type="revolute">
-			<xacro:origin_joint_e/>
+		<!-- joint_7 (link_l | joint_7) -->
+		<joint name="joint_7" type="revolute">
+			<xacro:origin_joint_7/>
 			<parent link="link_l"/>
 			<child  link="link_e"/>
 			<axis xyz="0 1 0"/>
@@ -131,9 +131,9 @@
 			</collision>
 		</link>
 
-		<!-- joint_u (link_e | joint_u) -->
-		<joint name="joint_u" type="revolute">
-			<xacro:origin_joint_u/>
+		<!-- joint_3 (link_e | joint_3) -->
+		<joint name="joint_3" type="revolute">
+			<xacro:origin_joint_3/>
 			<parent link="link_e"/>
 			<child  link="link_u"/>
 			<axis xyz="0 0 1"/>
@@ -158,9 +158,9 @@
 			</collision>
 		</link>
 
-		<!-- joint_r (link_u | joint_r) -->
-		<joint name="joint_r" type="revolute">
-			<xacro:origin_joint_r/>
+		<!-- joint_4 (link_u | joint_4) -->
+		<joint name="joint_4" type="revolute">
+			<xacro:origin_joint_4/>
 			<parent link="link_u"/>
 			<child  link="link_r"/>
 			<axis xyz="0 1 0"/>
@@ -185,9 +185,9 @@
 			</collision>
 		</link>
 
-		<!-- joint_b (link_r | joint_b) -->
-		<joint name="joint_b" type="revolute">
-			<xacro:origin_joint_b/>
+		<!-- joint_5 (link_r | joint_5) -->
+		<joint name="joint_5" type="revolute">
+			<xacro:origin_joint_5/>
 			<parent link="link_r"/>
 			<child  link="link_b"/>
 			<axis xyz="0 0 1"/>
@@ -212,9 +212,9 @@
 			</collision>
 		</link>
 
-		<!-- joint_t (link_b | joint_t) -->
-		<joint name="joint_t" type="revolute">
-			<xacro:origin_joint_t/>
+		<!-- joint_6 (link_b | joint_6) -->
+		<joint name="joint_6" type="revolute">
+			<xacro:origin_joint_6/>
 			<parent link="link_b"/>
 			<child  link="link_t"/>
 			<axis xyz="0 1 0"/>
