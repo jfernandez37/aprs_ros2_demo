@@ -36,6 +36,9 @@ def launch_setup(context, *args, **kwargs):
         package='robot_state_publisher',
         executable='robot_state_publisher',
         output='both',
+        remappings=[
+            ("joint_states", "/ctrl_groups/r1/joint_states")
+        ],
         parameters=[
             robot_description
         ],

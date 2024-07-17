@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="aprs_motoman">
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="motoman_arm">
     <group name="motoman_arm">
-      <chain base_link="world" tip_link="motoman_gripper" />
+      <chain base_link="world" tip_link="link_t" />
     </group>
 
     <group_state name="home" group="motoman_arm">
-      <joint name="joint_5" value="0.0"/>
-      <joint name="joint_7" value="-1.571"/>
-      <joint name="joint_2" value="0"/>
-      <joint name="joint_4" value="-1.571"/>
-      <joint name="joint_1" value="-1.571"/>
-      <joint name="joint_6" value="1.571"/>
-      <joint name="joint_3" value="1.571"/>
+      <joint name="group_1/joint_5" value="0.0"/>
+      <joint name="group_1/joint_7" value="-1.571"/>
+      <joint name="group_1/joint_2" value="0"/>
+      <joint name="group_1/joint_4" value="-1.571"/>
+      <joint name="group_1/joint_1" value="-1.571"/>
+      <joint name="group_1/joint_6" value="1.571"/>
+      <joint name="group_1/joint_3" value="1.571"/>
     </group_state>
 
     <group_state name="test_state" group="motoman_arm">
-      <joint name="joint_5" value="0.0"/>
-      <joint name="joint_7" value="0"/>
-      <joint name="joint_2" value="0"/>
-      <joint name="joint_4" value="-1.571"/>
-      <joint name="joint_1" value="-1.571"/>
-      <joint name="joint_6" value="1.571"/>
-      <joint name="joint_3" value="1.571"/>
+      <joint name="group_1/joint_5" value="0.0"/>
+      <joint name="group_1/joint_7" value="0"/>
+      <joint name="group_1/joint_2" value="0"/>
+      <joint name="group_1/joint_4" value="-1.571"/>
+      <joint name="group_1/joint_1" value="-1.571"/>
+      <joint name="group_1/joint_6" value="1.571"/>
+      <joint name="group_1/joint_3" value="1.571"/>
     </group_state>
     
     <disable_collisions link1="link_b" link2="link_e" reason="Never"/>

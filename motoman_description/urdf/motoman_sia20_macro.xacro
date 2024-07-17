@@ -2,7 +2,7 @@
 <robot name="motoman_sia20d" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
 	<!-- include macro file-->
-	<xacro:include filename="$(find aprs_description)/urdf/motoman/motoman_common.xacro"/>
+	<xacro:include filename="$(find motoman_description)/urdf/motoman_common.xacro"/>
 
 
     <xacro:macro name="motoman_sia20d" params="parent">
@@ -50,8 +50,8 @@
 			<child link = "motoman_base_link"/>
       	</joint>
 
-		<joint name="joint_1" type="revolute">
-			<xacro:origin_joint_1/>
+		<joint name="group_1/joint_1" type="revolute">
+			<xacro:origin_group_1_joint_1/>
 			<parent link="motoman_base_link"/>
 			<child  link="link_s"/>
 			<axis xyz="0 1 0"/>
@@ -77,9 +77,9 @@
 			</collision>
 		</link>
 
-		<!-- joint_2 (link_s | joint_2) -->
-		<joint name="joint_2" type="revolute">
-			<xacro:origin_joint_2/>
+		<!-- group_1/joint_2 (link_s | group_1/joint_2) -->
+		<joint name="group_1/joint_2" type="revolute">
+			<xacro:origin_group_1_joint_2/>
 			<parent link="link_s"/>
 			<child  link="link_l"/>
 			<axis xyz="0 0 1"/>
@@ -104,9 +104,9 @@
 			</collision>
 		</link>
 
-		<!-- joint_7 (link_l | joint_7) -->
-		<joint name="joint_7" type="revolute">
-			<xacro:origin_joint_7/>
+		<!-- group_1/joint_7 (link_l | group_1/joint_7) -->
+		<joint name="group_1/joint_7" type="revolute">
+			<xacro:origin_group_1_joint_7/>
 			<parent link="link_l"/>
 			<child  link="link_e"/>
 			<axis xyz="0 1 0"/>
@@ -131,9 +131,9 @@
 			</collision>
 		</link>
 
-		<!-- joint_3 (link_e | joint_3) -->
-		<joint name="joint_3" type="revolute">
-			<xacro:origin_joint_3/>
+		<!-- group_1/joint_3 (link_e | group_1/joint_3) -->
+		<joint name="group_1/joint_3" type="revolute">
+			<xacro:origin_group_1_joint_3/>
 			<parent link="link_e"/>
 			<child  link="link_u"/>
 			<axis xyz="0 0 1"/>
@@ -158,9 +158,9 @@
 			</collision>
 		</link>
 
-		<!-- joint_4 (link_u | joint_4) -->
-		<joint name="joint_4" type="revolute">
-			<xacro:origin_joint_4/>
+		<!-- group_1/joint_4 (link_u | group_1/joint_4) -->
+		<joint name="group_1/joint_4" type="revolute">
+			<xacro:origin_group_1_joint_4/>
 			<parent link="link_u"/>
 			<child  link="link_r"/>
 			<axis xyz="0 1 0"/>
@@ -185,9 +185,9 @@
 			</collision>
 		</link>
 
-		<!-- joint_5 (link_r | joint_5) -->
-		<joint name="joint_5" type="revolute">
-			<xacro:origin_joint_5/>
+		<!-- group_1/joint_5 (link_r | group_1/joint_5) -->
+		<joint name="group_1/joint_5" type="revolute">
+			<xacro:origin_group_1_joint_5/>
 			<parent link="link_r"/>
 			<child  link="link_b"/>
 			<axis xyz="0 0 1"/>
@@ -212,9 +212,9 @@
 			</collision>
 		</link>
 
-		<!-- joint_6 (link_b | joint_6) -->
-		<joint name="joint_6" type="revolute">
-			<xacro:origin_joint_6/>
+		<!-- group_1/joint_6 (link_b | group_1/joint_6) -->
+		<joint name="group_1/joint_6" type="revolute">
+			<xacro:origin_group_1_joint_6/>
 			<parent link="link_b"/>
 			<child  link="link_t"/>
 			<axis xyz="0 1 0"/>

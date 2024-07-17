@@ -50,7 +50,7 @@ std::pair<bool, moveit_msgs::msg::RobotTrajectory>  MotomanDemo::MotomanPlantoTa
 {
   moveit::planning_interface::MoveGroupInterface::Plan plan;
   bool success = static_cast<bool>(motoman_arm_.plan(plan));
-  moveit_msgs::msg::RobotTrajectory trajectory = plan.trajectory;
+  moveit_msgs::msg::RobotTrajectory trajectory = plan.trajectory_;
 
   if (success)
   {
