@@ -30,7 +30,7 @@ def launch_setup(context, *args, **kwargs):
         executable="move_group",
         output="screen",
         remappings=[
-            ("/joint_states", "/ctrl_groups/r1/joint_states")
+            ("/ctrl_groups/r1/joint_states", "joint_states")
         ],
         parameters=[
             moveit_config.to_dict(),

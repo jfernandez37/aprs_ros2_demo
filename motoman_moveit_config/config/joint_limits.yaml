@@ -1,4 +1,4 @@
-group_1/joint_2imits:
+joint_limits:
   group_1/joint_5:
     has_acceleration_limits: true
     max_acceleration: 5.0

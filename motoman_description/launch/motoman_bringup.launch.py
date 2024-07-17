@@ -19,6 +19,8 @@ def launch_setup(context, *args, **kwargs):
     doc = xacro.process_file(urdf)
 
     robot_description = {"robot_description": doc.toxml()}
+    
+    print(robot_description)
 
     robot_controllers = PathJoinSubstitution([FindPackageShare("motoman_description"), "config", "motoman_controllers.yaml",])
 
@@ -37,7 +39,7 @@ def launch_setup(context, *args, **kwargs):
         executable='robot_state_publisher',
         output='both',
         remappings=[
-            ("joint_states", "/ctrl_groups/r1/joint_states")
+            ("/ctrl_groups/r1/joint_states", "joint_states")
         ],
         parameters=[
             robot_description
