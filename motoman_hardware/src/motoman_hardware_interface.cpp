@@ -80,7 +80,7 @@ namespace motoman_hardware {
     // Connect to the State server
     if(connect(state_sock_, (struct sockaddr *)&state_socket_, sizeof(state_socket_)) < 0) 
     {
-      RCLCPP_ERROR(get_logger(), "Connection failed");
+      RCLCPP_ERROR(get_logger(), "Connection failed (state socket)");
       return hardware_interface::CallbackReturn::FAILURE;
     }
 
@@ -89,7 +89,7 @@ namespace motoman_hardware {
     // Connect to the Motion server
     if(connect(motion_sock_, (struct sockaddr *)&motion_socket_, sizeof(motion_socket_)) < 0) 
     {
-      RCLCPP_ERROR(get_logger(), "Connection failed");
+      RCLCPP_ERROR(get_logger(), "Connection failed(motion socket)");
       return hardware_interface::CallbackReturn::FAILURE;
     }
 

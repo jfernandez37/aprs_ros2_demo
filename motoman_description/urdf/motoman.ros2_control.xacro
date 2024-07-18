@@ -5,7 +5,7 @@
 
     <ros2_control name="motoman" type="system">
       <hardware>
-        <plugin>motoman_hardware/MotomanHardwareInterface</plugin>
+        <plugin>mock_components/GenericSystem</plugin>
       </hardware>
       
       <joint name="group_1/joint_5">

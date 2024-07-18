@@ -58,11 +58,11 @@ def launch_setup(context, *args, **kwargs):
         arguments=['forward_position_controller',],
     )
 
-    motoman_gripper_control = Node(
-        package="motoman_hardware",
-        executable="motoman_gripper_control.py",
-        output = 'screen'
-    )
+    # motoman_gripper_control = Node(
+    #     package="motoman_hardware",
+    #     executable="motoman_gripper_control.py",
+    #     output = 'screen'
+    # )
 
     # rviz_config_file = PathJoinSubstitution(
     #     [FindPackageShare("motoman_description"), "config", "motoman.rviz"]
@@ -93,7 +93,7 @@ def launch_setup(context, *args, **kwargs):
         robot_state_publisher,
         joint_state_broadcaster,
         forward_position_controller,
-        motoman_gripper_control,
+        # motoman_gripper_control,
         # rviz_node
     ]
 

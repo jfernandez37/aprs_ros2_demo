@@ -8,10 +8,10 @@ moveit_controller_manager: moveit_simple_controller_manager/MoveItSimpleControll
 
 moveit_simple_controller_manager:
   controller_names:
-    - joint_trajectory_controller
+    - follow_joint_trajectory
 
-  joint_trajectory_controller:
-    action_ns: follow_joint_trajectory
+  follow_joint_trajectory:
+    action_ns: ""
     type: FollowJointTrajectory
     default: true
     joints:
