@@ -21,8 +21,14 @@ set(msg_files
   "msg/Trays.msg"
 )
 
+set(srv_files
+  "srv/MoveCartesian.srv"
+  "srv/MoveToPose.srv"
+)
+
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
+  ${srv_files}
 
   DEPENDENCIES
   builtin_interfaces
