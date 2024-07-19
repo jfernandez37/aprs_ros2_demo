@@ -1,6 +1,8 @@
 import os
 import xacro
 from launch import LaunchDescription
+from launch.actions import RegisterEventHandler
+from launch.event_handlers import OnProcessExit
 from launch.actions import (
     OpaqueFunction,
 )
@@ -19,10 +21,9 @@ def launch_setup(context, *args, **kwargs):
     doc = xacro.process_file(urdf)
 
     robot_description = {"robot_description": doc.toxml()}
-    
-    print(robot_description)
 
     robot_controllers = PathJoinSubstitution([FindPackageShare("motoman_description"), "config", "motoman_controllers.yaml",])
+    rviz_config_file = PathJoinSubstitution([FindPackageShare("motoman_description"), "config", "motoman.rviz",])
 
     control_node = Node(
         package="controller_manager",
@@ -47,54 +48,47 @@ def launch_setup(context, *args, **kwargs):
     )
 
     joint_state_broadcaster = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=['joint_state_broadcaster'],
+        package="joint_state_publisher",
+        executable="joint_state_publisher",
     )
     
-    forward_position_controller = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=['forward_position_controller',],
-    )
-
-    # motoman_gripper_control = Node(
-    #     package="motoman_hardware",
-    #     executable="motoman_gripper_control.py",
-    #     output = 'screen'
-    # )
-
-    # rviz_config_file = PathJoinSubstitution(
-    #     [FindPackageShare("motoman_description"), "config", "motoman.rviz"]
-    # )
-
-    # moveit_config = (
-    #     MoveItConfigsBuilder("motoman", package_name="motoman_moveit_config")
-    #     .robot_description(urdf)
-    #     .robot_description_semantic(file_path="config/motoman.srdf")
-    #     .trajectory_execution(file_path="config/controllers.yaml")
-    #     .planning_pipelines(pipelines=["ompl"])
-    #     .to_moveit_configs()
-    # )
-
-    # rviz_node = Node(
-    #     package="rviz2",
-    #     executable="rviz2",
-    #     output="log",
-    #     arguments=["-d", rviz_config_file],
-    #     parameters=[
-    #         moveit_config.to_dict(),
-    #     ],
-    # )
+#    forward_position_controller = Node(
+#        package="controller_manager",
+#        executable="spawner",
+#        arguments=["joint_trajectory_controller", "--controller-manager", "/controller_manager"],
+#    )
     
+    moveit_config = (
+        MoveItConfigsBuilder("motoman", package_name="motoman_moveit_config")
+        .robot_description(urdf)
+        .robot_description_semantic(file_path="config/motoman.srdf")
+        .trajectory_execution(file_path="config/controllers.yaml")
+        .planning_pipelines(pipelines=["ompl"])
+        .to_moveit_configs()
+    )    
+    
+    rviz_node = Node(
+        package="rviz2",
+        executable="rviz2",
+        output="log",
+        arguments=["-d", rviz_config_file],
+        parameters=[moveit_config.to_dict(),],
+    )    
+    
+    
+    motoman_gripper_control = Node(
+        package="motoman_hardware",
+        executable="motoman_gripper_control.py",
+        output = 'screen'
+    )    
 
     nodes_to_start = [
         control_node,
         robot_state_publisher,
         joint_state_broadcaster,
-        forward_position_controller,
-        # motoman_gripper_control,
-        # rviz_node
+#        forward_position_controller,
+        motoman_gripper_control,
+        rviz_node
     ]
 
     return nodes_to_start
