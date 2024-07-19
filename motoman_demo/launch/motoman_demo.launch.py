@@ -4,14 +4,20 @@ from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
 from launch_ros.actions import Node
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch_ros.substitutions import FindPackageShare
 
 from launch.actions import (
     OpaqueFunction,
 )
 
+from launch.actions import IncludeLaunchDescription
+
 from moveit_configs_utils import MoveItConfigsBuilder
 
 def launch_setup(context, *args, **kwargs):
+
+    motoman_description = LaunchDescription([IncludeLaunchDescription(PythonLaunchDescriptionSource([FindPackageShare("motoman_description"), '/launch', '/motoman_bringup.launch.py']))])
 
     urdf = os.path.join(get_package_share_directory("motoman_description"), "urdf/motoman.urdf.xacro")
 
@@ -37,6 +43,7 @@ def launch_setup(context, *args, **kwargs):
 
 
     nodes_to_start = [
+    	motoman_description,
         motoman_node,
     ]
 
