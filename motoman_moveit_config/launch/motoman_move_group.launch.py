@@ -29,14 +29,10 @@ def launch_setup(context, *args, **kwargs):
         package="moveit_ros_move_group",
         executable="move_group",
         output="screen",
-        remappings=[
-            ("/ctrl_groups/r1/joint_states", "joint_states")
-        ],
         parameters=[
             moveit_config.to_dict(),
-            {"use_sim_time": True}
         ],
-    )   
+    )
 
     nodes_to_start = [
         move_group_node

@@ -28,7 +28,9 @@ def launch_setup(context, *args, **kwargs):
     control_node = Node(
         package="controller_manager",
         executable="ros2_control_node",
-        parameters=[robot_controllers],
+        parameters=[
+            robot_description,
+            robot_controllers],
         output="both",
         remappings=[
             ("~/robot_description", "/robot_description"),
@@ -39,24 +41,29 @@ def launch_setup(context, *args, **kwargs):
         package='robot_state_publisher',
         executable='robot_state_publisher',
         output='both',
-        remappings=[
-            ("/ctrl_groups/r1/joint_states", "joint_states")
-        ],
         parameters=[
             robot_description
         ],
     )
 
-    joint_state_broadcaster = Node(
-        package="joint_state_publisher",
-        executable="joint_state_publisher",
-    )
+    # joint_state_broadcaster = Node(
+    #         package='controller_manager',
+    #         executable='spawner',
+    #         name='joint_state_broadcaster_spawner',
+    #         arguments=[
+    #             'joint_state_broadcaster'
+    #         ]
+    #     )
     
-#    forward_position_controller = Node(
-#        package="controller_manager",
-#        executable="spawner",
-#        arguments=["joint_trajectory_controller", "--controller-manager", "/controller_manager"],
-#    )
+    joint_trajectory_controller = Node(
+            package='controller_manager',
+            executable='spawner',
+            name='controller_spawner',
+            # namespace=robot,
+            arguments=[
+                'joint_trajectory_controller'
+            ]
+        )
     
     moveit_config = (
         MoveItConfigsBuilder("motoman", package_name="motoman_moveit_config")
@@ -85,8 +92,8 @@ def launch_setup(context, *args, **kwargs):
     nodes_to_start = [
         control_node,
         robot_state_publisher,
-        joint_state_broadcaster,
-#        forward_position_controller,
+        # joint_state_broadcaster,
+        joint_trajectory_controller,
         motoman_gripper_control,
         rviz_node
     ]
