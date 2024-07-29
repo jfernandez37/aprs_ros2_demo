@@ -32,9 +32,9 @@ def launch_setup(context, *args, **kwargs):
             robot_description,
             robot_controllers],
         output="both",
-        remappings=[
-            ("~/robot_description", "/robot_description"),
-        ],
+        # remappings=[
+        #     ("~/robot_description", "/robot_description"),
+        # ],
     )
     
     robot_state_publisher = Node(
@@ -46,14 +46,14 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
-    # joint_state_broadcaster = Node(
-    #         package='controller_manager',
-    #         executable='spawner',
-    #         name='joint_state_broadcaster_spawner',
-    #         arguments=[
-    #             'joint_state_broadcaster'
-    #         ]
-    #     )
+    joint_state_broadcaster = Node(
+            package='controller_manager',
+            executable='spawner',
+            name='joint_state_broadcaster_spawner',
+            arguments=[
+                'joint_state_broadcaster'
+            ]
+        )
     
     joint_trajectory_controller = Node(
             package='controller_manager',
@@ -69,7 +69,7 @@ def launch_setup(context, *args, **kwargs):
         MoveItConfigsBuilder("motoman", package_name="motoman_moveit_config")
         .robot_description(urdf)
         .robot_description_semantic(file_path="config/motoman.srdf")
-        .trajectory_execution(file_path="config/controllers.yaml")
+        .trajectory_execution(file_path="config/moveit_controllers.yaml")
         .planning_pipelines(pipelines=["ompl"])
         .to_moveit_configs()
     )    
@@ -83,18 +83,18 @@ def launch_setup(context, *args, **kwargs):
     )    
     
     
-    motoman_gripper_control = Node(
-        package="motoman_hardware",
-        executable="motoman_gripper_control.py",
-        output = 'screen'
-    )    
+    # motoman_gripper_control = Node(
+    #     package="motoman_hardware",
+    #     executable="motoman_gripper_control.py",
+    #     output = 'screen'
+    # )    
 
     nodes_to_start = [
         control_node,
         robot_state_publisher,
         # joint_state_broadcaster,
-        joint_trajectory_controller,
-        motoman_gripper_control,
+        # joint_trajectory_controller,
+        # motoman_gripper_control,
         rviz_node
     ]
 
