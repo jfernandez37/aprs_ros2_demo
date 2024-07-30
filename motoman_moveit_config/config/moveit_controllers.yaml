@@ -21,3 +21,4 @@ moveit_simple_controller_manager:
       - group_1/joint_4
       - group_1/joint_5
       - group_1/joint_6
+      - group_1/joint_7

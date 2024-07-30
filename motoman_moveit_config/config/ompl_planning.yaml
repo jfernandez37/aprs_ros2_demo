@@ -59,7 +59,7 @@ planner_configs:
   PRMstarkConfigDefault:
     type: geometric::PRMstar
 
-aprs_motoman:
+motoman_arm:
   planner_configs:
     - SBLkConfigDefault
     - ESTkConfigDefault

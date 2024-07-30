@@ -90,12 +90,12 @@ def launch_setup(context, *args, **kwargs):
     # )    
 
     nodes_to_start = [
-        control_node,
+        # control_node,
         robot_state_publisher,
         # joint_state_broadcaster,
         # joint_trajectory_controller,
         # motoman_gripper_control,
-        rviz_node
+        # rviz_node
     ]
 
     return nodes_to_start
