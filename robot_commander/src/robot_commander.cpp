@@ -230,7 +230,7 @@ std::pair<bool, moveit_msgs::msg::RobotTrajectory> RobotCommander::plan_to_targe
 {
   moveit::planning_interface::MoveGroupInterface::Plan plan;
   bool success = static_cast<bool>(planning_interface_.plan(plan));
-  moveit_msgs::msg::RobotTrajectory trajectory = plan.trajectory;
+  moveit_msgs::msg::RobotTrajectory trajectory = plan.trajectory_;
 
   if (success)
   {
