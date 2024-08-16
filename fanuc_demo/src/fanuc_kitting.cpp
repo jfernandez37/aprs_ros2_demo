@@ -51,7 +51,7 @@ std::pair<bool, moveit_msgs::msg::RobotTrajectory>  FanucDemo::FanucPlantoTarget
 {
   moveit::planning_interface::MoveGroupInterface::Plan plan;
   bool success = static_cast<bool>(fanuc_arm_.plan(plan));
-  moveit_msgs::msg::RobotTrajectory trajectory = plan.trajectory_;
+  moveit_msgs::msg::RobotTrajectory trajectory = plan.trajectory;
 
   if (success)
   {
