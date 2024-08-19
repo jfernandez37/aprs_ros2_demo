@@ -61,6 +61,9 @@ class GUI_CLASS(Node):
         s.theme_use('clam')
         s.configure('TNotebook', font='Arial Bold')
         
+        # Demo variables
+        self.robots_to_use = {robot: ctk.StringVar() for robot in ROBOTS}
+
         # Service variables
         self.service_type = ctk.StringVar()
         self.service_type.set(SERVICE_TYPES[0])
@@ -92,6 +95,11 @@ class GUI_CLASS(Node):
         # Notebook pages
         self.notebook = ttk.Notebook(self.gui)
         
+        self.demo_frame = ctk.CTkFrame(self.notebook, width=FRAMEWIDTH, height=FRAMEHEIGHT)
+        self.demo_frame.pack(fill='both', expand=True)
+        self.notebook.add(self.demo_frame, text="Run Demo")
+        self.add_demo_widgets_to_frame()
+
         self.service_call_frame = ctk.CTkFrame(self.notebook, width=FRAMEWIDTH, height=FRAMEHEIGHT)
         self.service_call_frame.pack(fill='both', expand=True)
         self.notebook.add(self.service_call_frame, text="Services")
@@ -108,10 +116,23 @@ class GUI_CLASS(Node):
         self.notebook.add(self.robot_status_frame, text="Robot Statuses")
         # self.add_robot_statuses_to_frame()
         
-        self.notebook.grid(pady=10, column=LEFT_COLUMN, columnspan = 2, sticky=tk.E+tk.W+tk.N+tk.S)
-        
-        
+        self.notebook.grid(pady=10, column=LEFT_COLUMN, columnspan = 2, sticky=tk.E+tk.W+tk.N+tk.S)   
 
+    def add_demo_widgets_to_frame(self):
+        self.demo_frame.grid_rowconfigure(0, weight=1)
+        self.demo_frame.grid_rowconfigure(100, weight=1)
+        self.demo_frame.grid_columnconfigure(0, weight=1)
+        self.demo_frame.grid_columnconfigure(10, weight=1)
+
+        current_row = 2
+
+        ctk.CTkLabel(self.demo_frame, text="Select the robots to use:").grid(column = LEFT_COLUMN, columnspan = 3, row = current_row, pady=10)
+        current_row+=1
+
+        for robot, var in self.robots_to_use.items():
+            ctk.CTkCheckBox(self.demo_frame, text=robot, variable=var, onvalue="1", offvalue = "0", height=1, width=20).grid(column = LEFT_COLUMN, columnspan = 3, row = current_row)
+            current_row+=1
+    
     def add_service_widgets_to_frame(self):
         self.service_call_frame.grid_rowconfigure(0, weight=1)
         self.service_call_frame.grid_rowconfigure(100, weight=1)
@@ -176,12 +197,13 @@ class GUI_CLASS(Node):
             elif "fanuc" in n:
                 fanuc_found = True
         self.connections["motoman"].set(1 if motoman_found else 0)
-        self.connections["fanuc"].set(1 if fanuc_found else 0)
+        self.connections["fanuc"].set(1 if fanuc_found else 0 )
 
         # self.connections["motoman"].set(1)
 
     def update_connection_label(self, robot, _, __, ___):
         self.robot_connection_status_labels[robot].configure(text=("Connected" if self.connections[robot].get()==1 else "Not Connected"))
+
 
 def main(args=None):
     rclpy.init(args=args)
