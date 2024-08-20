@@ -24,6 +24,7 @@ from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 # from industrial_msgs.msg import RobotStatus
 import os
 from rclpy.executors import MultiThreadedExecutor
+from difflib import SequenceMatcher
 
 FRAMEWIDTH=700
 FRAMEHEIGHT=900
@@ -64,15 +65,13 @@ class GUI_CLASS(Node):
         # Demo variables
         self.robots_to_use = {robot: ctk.StringVar() for robot in ROBOTS}
         
-        # Topic variables
-        self.update_topic_var = ctk.IntVar()
-        self.update_topic_var.set(0)
-        
         # Service variables
         self.service_type = ctk.StringVar()
         self.service_type.set(SERVICE_TYPES[0])
         self.temp_widgets = []
         self.temp_vars = []
+        
+        self.available_topics = self.get_avalailable_topics()
 
         # Connection to robots
         self.connections = {robot: ctk.IntVar() for robot in ROBOTS}
@@ -149,14 +148,12 @@ class GUI_CLASS(Node):
         self.topics_frame.grid_columnconfigure(0, weight=1)
         self.topics_frame.grid_columnconfigure(10, weight=1)
         
-        available_topics = self.get_avalailable_topics()
-        
         current_topic_selection = ctk.StringVar()
-        current_topic_selection.set(available_topics[0])
-        topic_menu = ctk.CTkOptionMenu(self.topics_frame, variable=current_topic_selection, values=available_topics)
+        current_topic_selection.set(self.available_topics[0])
+        topic_menu = ctk.CTkComboBox(self.topics_frame, variable=current_topic_selection, values=self.available_topics)
         topic_menu.grid(column = LEFT_COLUMN, row = 2)
         
-        self.topic_sub_frame = ctk.CTkScrollableFrame(self.topics_frame, width = 650, height=800)
+        self.topic_sub_frame = ctk.CTkScrollableFrame(self.topics_frame, width = 650, height=600)
         self.topic_sub_frame.grid(column = LEFT_COLUMN, row = 3, columnspan = 3)
         self.topic_sub_frame.bind_all("<Button-4>", self.mouse_wheel_up_current_file)
         self.topic_sub_frame.bind_all("<Button-5>", self.mouse_wheel_down_current_file)
@@ -167,20 +164,31 @@ class GUI_CLASS(Node):
         update_button = ctk.CTkButton(self.topics_frame, text="Update", command=partial(self.update_topic_text, current_topic_selection, topic_output_label))
         update_button.grid(column = RIGHT_COLUMN, row = 2)
         
-        self.update_topic_var.trace_add('write', partial(self.update_available_topics, topic_menu, current_topic_selection))
+        current_topic_selection.trace_add("write", partial(self.only_show_matching, current_topic_selection, topic_menu))
+    
+    def only_show_matching(self, current_topic_selection, topic_menu, _, __, ___):
+        selection = current_topic_selection.get()
+        if selection in self.available_topics:
+            topic_menu.configure(values = self.available_topics)
+        else:
+            options = []
+            for topic in self.available_topics:
+                if selection in topic:
+                    options.append(topic)
+                elif SequenceMatcher(None, selection, topic[:len(selection)]).ratio() > 0.5:
+                    options.append(topic)
+            topic_menu.configure(values = options)
     
     def get_avalailable_topics(self):
-        info = os.popen("ros2 topic list").read().split("\n")
-        return info
-    
-    def update_available_topics(self, menu, current_topic_selection, _, __, ___):
-        available_topics = self.get_avalailable_topics()
-        if current_topic_selection.get() not in available_topics:
-            current_topic_selection.set(available_topics[0])
-        menu.configure(values = available_topics)
+        topics = os.popen("ros2 topic list").read().split("\n")
+        for topic in ["/rosout","/parameter_events", "/map", ""]:
+            if topic in topics:
+                topics.remove(topic)
+        return topics
         
     def update_topic_text(self, current_topic_selection, topic_output_label):
-        topic_output = os.popen(f"ros2 topic echo {current_topic_selection.get()} --once").read()
+        topic_output = os.popen(f"ros2 topic echo {current_topic_selection.get()} --once -f").read()
+        topic_output = topic_output.replace('\\n', '\n')
         topic_output_label.configure(text = topic_output)
     
     def add_service_widgets_to_frame(self):
@@ -249,8 +257,10 @@ class GUI_CLASS(Node):
         self.connections["motoman"].set(1 if motoman_found else 0)
         self.connections["fanuc"].set(1 if fanuc_found else 0 )
 
-        self.update_topic_var.set((self.update_topic_var.get()+1)%2)
-        # self.connections["motoman"].set(1)
+        self.available_topics = os.popen("ros2 topic list").read().split("\n")
+        for topic in ["/rosout","/parameter_events", "/map", ""]:
+            if topic in self.available_topics:
+                self.available_topics.remove(topic)
 
     def update_connection_label(self, robot, _, __, ___):
         self.robot_connection_status_labels[robot].configure(text=("Connected" if self.connections[robot].get()==1 else "Not Connected"))
