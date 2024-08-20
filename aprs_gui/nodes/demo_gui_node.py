@@ -63,7 +63,11 @@ class GUI_CLASS(Node):
         
         # Demo variables
         self.robots_to_use = {robot: ctk.StringVar() for robot in ROBOTS}
-
+        
+        # Topic variables
+        self.update_topic_var = ctk.IntVar()
+        self.update_topic_var.set(0)
+        
         # Service variables
         self.service_type = ctk.StringVar()
         self.service_type.set(SERVICE_TYPES[0])
@@ -76,7 +80,6 @@ class GUI_CLASS(Node):
             self.connections[robot].set(0)
         for robot, var in self.connections.items():
             var.trace_add('write', partial(self.update_connection_label, robot))
-        self.connection_timer = self.create_timer(1, self.connection_timer_cb_)
 
         # ROS Subscriptions
         
@@ -100,6 +103,11 @@ class GUI_CLASS(Node):
         self.notebook.add(self.demo_frame, text="Run Demo")
         self.add_demo_widgets_to_frame()
 
+        self.topics_frame = ctk.CTkFrame(self.notebook, width=FRAMEWIDTH, height=FRAMEHEIGHT)
+        self.topics_frame.pack(fill='both', expand=True)
+        self.notebook.add(self.topics_frame, text="Topics")
+        self.add_topic_widgets_to_frame()
+        
         self.service_call_frame = ctk.CTkFrame(self.notebook, width=FRAMEWIDTH, height=FRAMEHEIGHT)
         self.service_call_frame.pack(fill='both', expand=True)
         self.notebook.add(self.service_call_frame, text="Services")
@@ -116,7 +124,9 @@ class GUI_CLASS(Node):
         self.notebook.add(self.robot_status_frame, text="Robot Statuses")
         # self.add_robot_statuses_to_frame()
         
-        self.notebook.grid(pady=10, column=LEFT_COLUMN, columnspan = 2, sticky=tk.E+tk.W+tk.N+tk.S)   
+        self.notebook.grid(pady=10, column=LEFT_COLUMN, columnspan = 2, sticky=tk.E+tk.W+tk.N+tk.S)
+        
+        self.connection_timer = self.create_timer(5, self.connection_timer_cb_)
 
     def add_demo_widgets_to_frame(self):
         self.demo_frame.grid_rowconfigure(0, weight=1)
@@ -133,6 +143,46 @@ class GUI_CLASS(Node):
             ctk.CTkCheckBox(self.demo_frame, text=robot, variable=var, onvalue="1", offvalue = "0", height=1, width=20).grid(column = LEFT_COLUMN, columnspan = 3, row = current_row)
             current_row+=1
     
+    def add_topic_widgets_to_frame(self):
+        self.topics_frame.grid_rowconfigure(0, weight=1)
+        self.topics_frame.grid_rowconfigure(100, weight=1)
+        self.topics_frame.grid_columnconfigure(0, weight=1)
+        self.topics_frame.grid_columnconfigure(10, weight=1)
+        
+        available_topics = self.get_avalailable_topics()
+        
+        current_topic_selection = ctk.StringVar()
+        current_topic_selection.set(available_topics[0])
+        topic_menu = ctk.CTkOptionMenu(self.topics_frame, variable=current_topic_selection, values=available_topics)
+        topic_menu.grid(column = LEFT_COLUMN, row = 2)
+        
+        self.topic_sub_frame = ctk.CTkScrollableFrame(self.topics_frame, width = 650, height=800)
+        self.topic_sub_frame.grid(column = LEFT_COLUMN, row = 3, columnspan = 3)
+        self.topic_sub_frame.bind_all("<Button-4>", self.mouse_wheel_up_current_file)
+        self.topic_sub_frame.bind_all("<Button-5>", self.mouse_wheel_down_current_file)
+        
+        topic_output_label = ctk.CTkLabel(self.topic_sub_frame, text="")
+        topic_output_label.pack()
+        
+        update_button = ctk.CTkButton(self.topics_frame, text="Update", command=partial(self.update_topic_text, current_topic_selection, topic_output_label))
+        update_button.grid(column = RIGHT_COLUMN, row = 2)
+        
+        self.update_topic_var.trace_add('write', partial(self.update_available_topics, topic_menu, current_topic_selection))
+    
+    def get_avalailable_topics(self):
+        info = os.popen("ros2 topic list").read().split("\n")
+        return info
+    
+    def update_available_topics(self, menu, current_topic_selection, _, __, ___):
+        available_topics = self.get_avalailable_topics()
+        if current_topic_selection.get() not in available_topics:
+            current_topic_selection.set(available_topics[0])
+        menu.configure(values = available_topics)
+        
+    def update_topic_text(self, current_topic_selection, topic_output_label):
+        topic_output = os.popen(f"ros2 topic echo {current_topic_selection.get()} --once").read()
+        topic_output_label.configure(text = topic_output)
+    
     def add_service_widgets_to_frame(self):
         self.service_call_frame.grid_rowconfigure(0, weight=1)
         self.service_call_frame.grid_rowconfigure(100, weight=1)
@@ -142,13 +192,13 @@ class GUI_CLASS(Node):
         command_label = ctk.CTkLabel(self.service_call_frame, text="ros2 service call  ")
         command_label.grid(column = FAR_LEFT_COLUMN, row = 2)
         
-        service_selection_menu = OptionMenu(self.service_call_frame, self.service_type, *SERVICE_TYPES)
+        service_selection_menu = ctk.CTkOptionMenu(self.service_call_frame, variable=self.service_type, values=SERVICE_TYPES)
         service_selection_menu.grid(column = LEFT_COLUMN, row = 2)
         
-        serice_type_label = ctk.CTkLabel(self.service_call_frame, text=f"  {SERVICE_TYPES_DICT[self.service_type.get()]}  ")
-        serice_type_label.grid(column = MIDDLE_COLUMN, row = 2)
-        self.service_type.trace_add('write', partial(self.update_service_type, serice_type_label))
-        self.update_service_type(serice_type_label, None, None, None)
+        service_type_label = ctk.CTkLabel(self.service_call_frame, text=f"  {SERVICE_TYPES_DICT[self.service_type.get()]}  ")
+        service_type_label.grid(column = MIDDLE_COLUMN, row = 2)
+        self.service_type.trace_add('write', partial(self.update_service_type, service_type_label))
+        self.update_service_type(service_type_label, None, None, None)
         
         service_call_button = ctk.CTkButton(self.service_call_frame, text="Call Service", command=self.call_service)
         service_call_button.grid(column = FAR_LEFT_COLUMN, columnspan=6, row = 5, pady=10)
@@ -199,11 +249,19 @@ class GUI_CLASS(Node):
         self.connections["motoman"].set(1 if motoman_found else 0)
         self.connections["fanuc"].set(1 if fanuc_found else 0 )
 
+        self.update_topic_var.set((self.update_topic_var.get()+1)%2)
         # self.connections["motoman"].set(1)
 
     def update_connection_label(self, robot, _, __, ___):
         self.robot_connection_status_labels[robot].configure(text=("Connected" if self.connections[robot].get()==1 else "Not Connected"))
 
+    def mouse_wheel_up_current_file(self, event):
+        if self.notebook.index("current") == 1:
+            self.topic_sub_frame._parent_canvas.yview_scroll(int(-2), "units")
+    
+    def mouse_wheel_down_current_file(self, event):
+        if self.notebook.index("current") == 1:
+            self.topic_sub_frame._parent_canvas.yview_scroll(int(2), "units")
 
 def main(args=None):
     rclpy.init(args=args)
