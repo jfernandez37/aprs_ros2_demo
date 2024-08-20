@@ -16,11 +16,6 @@ set(msg_files
   "msg/Trays.msg"
   "msg/SlotInfo.msg"
 )
-set(srv_files
-  "srv/MoveToNamedPose.srv"
-  "srv/Pick.srv"
-  "srv/Place.srv"
-)
 
 set(srv_files
   "srv/MoveToNamedPose.srv"

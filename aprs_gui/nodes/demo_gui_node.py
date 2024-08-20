@@ -19,12 +19,14 @@ from functools import partial
 from PIL import Image
 from rclpy.node import Node
 import threading
-from aprs_interfaces.srv import MoveToNamedPose, Pick, Place
+from aprs_interfaces.srv import MoveToNamedPose, Pick, Place, GenerateInitState, GeneratePlan
+from aprs_interfaces.action import ExecutePlan
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 # from industrial_msgs.msg import RobotStatus
 import os
 from rclpy.executors import MultiThreadedExecutor
 from difflib import SequenceMatcher
+from rclpy.action import ActionClient
 
 FRAMEWIDTH=700
 FRAMEHEIGHT=900
@@ -88,12 +90,20 @@ class GUI_CLASS(Node):
             depth=1
         )
 
-        # self.robot_status_subscriber_ = self.create_subscription(
-        #     RobotStatus,
-        #     '/robot_status',
-        #     self.robot_status_cb_,
-        #     qos_profile=qos_profile)
-
+        # ROS service clients
+        self.generate_init_state_client = self.create_client(
+            GenerateInitState,
+            '/generate_init_state'
+        )
+        
+        self.generate_plan_client = self.create_client(
+            GeneratePlan,
+            "/generate_plan"
+        )
+        
+        # Ros action clients
+        self.execute_plan_action_client = ActionClient(self, ExecutePlan, "/execute_plan")
+        
         # Notebook pages
         self.notebook = ttk.Notebook(self.gui)
         
@@ -118,10 +128,20 @@ class GUI_CLASS(Node):
         self.robot_connection_status_labels = {robot: ctk.CTkLabel(self.connections_frame, text=("Connected" if self.connections[robot].get()==1 else "Not Connected")) for robot in ROBOTS}
         self.add_connections_widgets_to_frame()
 
-        self.robot_status_frame = ctk.CTkFrame(self.notebook, width=FRAMEWIDTH, height=FRAMEHEIGHT)
-        self.robot_status_frame.pack(fill='both', expand=True)
-        self.notebook.add(self.robot_status_frame, text="Robot Statuses")
-        # self.add_robot_statuses_to_frame()
+        self.init_plan_execute_frame = ctk.CTkFrame(self.notebook, width=FRAMEWIDTH, height=FRAMEHEIGHT)
+        self.init_plan_execute_frame.pack(fill='both', expand=True)
+        self.notebook.add(self.init_plan_execute_frame, text="Init Plan Execute")
+        self.add_init_plan_execute_widgets_to_frame()
+        
+        self.motoman_frame = ctk.CTkFrame(self.notebook, width=FRAMEWIDTH, height=FRAMEHEIGHT)
+        self.motoman_frame.pack(fill='both', expand=True)
+        self.notebook.add(self.motoman_frame, text="Motoman")
+        self.add_motoman_widgets_to_frame()
+        
+        self.fanuc_frame = ctk.CTkFrame(self.notebook, width=FRAMEWIDTH, height=FRAMEHEIGHT)
+        self.fanuc_frame.pack(fill='both', expand=True)
+        self.notebook.add(self.fanuc_frame)
+        self.add_fanuc_widgets_to_frame()
         
         self.notebook.grid(pady=10, column=LEFT_COLUMN, columnspan = 2, sticky=tk.E+tk.W+tk.N+tk.S)
         
@@ -151,7 +171,7 @@ class GUI_CLASS(Node):
         current_topic_selection = ctk.StringVar()
         current_topic_selection.set(self.available_topics[0])
         topic_menu = ctk.CTkComboBox(self.topics_frame, variable=current_topic_selection, values=self.available_topics)
-        topic_menu.grid(column = LEFT_COLUMN, row = 2)
+        topic_menu.grid(column = LEFT_COLUMN, row = 2, pady = 15)
         
         self.topic_sub_frame = ctk.CTkScrollableFrame(self.topics_frame, width = 650, height=600)
         self.topic_sub_frame.grid(column = LEFT_COLUMN, row = 3, columnspan = 3)
@@ -264,14 +284,109 @@ class GUI_CLASS(Node):
 
     def update_connection_label(self, robot, _, __, ___):
         self.robot_connection_status_labels[robot].configure(text=("Connected" if self.connections[robot].get()==1 else "Not Connected"))
+    
+    # ======================================================================================
+    #                                     Init Plan Execute
+    # ======================================================================================
+    
+    def add_init_plan_execute_widgets_to_frame(self):
+        self.init_plan_execute_frame.grid_rowconfigure(0, weight=1)
+        self.init_plan_execute_frame.grid_rowconfigure(100, weight=1)
+        self.init_plan_execute_frame.grid_columnconfigure(0, weight=1)
+        self.init_plan_execute_frame.grid_columnconfigure(10, weight=1)
+        
+        self.generate_init_state_button = ctk.CTkButton(self.init_plan_execute_frame, text="Generate Init State", command = self.call_generate_init_state)
+        self.generate_init_state_button.grid(column = MIDDLE_COLUMN, row = 2, pady = 10)
+        
+        self.generate_plan_button = ctk.CTkButton(self.init_plan_execute_frame, text="Generate plan", state=DISABLED, command = self.call_generate_plan)
+        self.generate_plan_button. grid(column = MIDDLE_COLUMN, row = 3, pady = 10)
+        
+        self.plan_sub_frame = ctk.CTkScrollableFrame(self.init_plan_execute_frame, width = 650, height=500)
+        self.plan_sub_frame.grid(column = LEFT_COLUMN, row = 4, columnspan = 3)
+        
+        self.plan_label = ctk.CTkLabel(self.plan_sub_frame, text="")
+        self.plan_label.pack()
+        
+        self.execute_plan_button = ctk.CTkButton(self.init_plan_execute_frame, text="Execute plan", state=DISABLED, command=self.execute_plan)
+        self.execute_plan_button. grid(column = MIDDLE_COLUMN, row = 5, pady = 10)
+        
+    
+    def call_generate_init_state(self):
+        """Generates the init state
+        """
+        request = GenerateInitState.Request()
 
+        future = self.generate_init_state_client.call_async(request)
+
+        while not future.done():
+            pass
+        
+        response: GenerateInitState.Response = future.result()
+        
+        self.get_logger().info(f"Generated Init State: {response.status}")
+        
+        self.generate_init_state_button.grid_forget()
+        self.generate_plan_button.configure(state=NORMAL)
+    
+    def call_generate_plan(self):
+        """Generates a plan
+        """
+        request = GeneratePlan.Request()
+
+        future = self.generate_plan_client.call_async(request)
+
+        while not future.done():
+            pass
+        
+        response: GeneratePlan.Response = future.result()
+        
+        self.get_logger().info(f"Generated Init State: {response.status}")
+        
+        self.plan_label.configure(text = response.plan)
+        self.execute_plan_button.configure(state=NORMAL)
+    
+    def execute_plan(self):
+        pass
+        # self.execute_plan_action_client.wait_for_server()
+        
+        # execute_plan = ExecutePlan.Goal()
+        
+        # self.get_logger().info(f"Goal:\n\n{execute_plan}\n\n")
+        
+        # future = self._action_client.send_goal_async(execute_plan)
+        
+        # while not future.done():
+        #     pass
+        
+        # future.add_done_callback(self.goal_response_callback)
+        
+    # ======================================================================================
+    #                                       Motoman Tab
+    # ======================================================================================
+    def add_motoman_widgets_to_frame(self):
+        pass
+    
+    # ======================================================================================
+    #                                        Fanuc Tab
+    # ======================================================================================
+    def add_fanuc_widgets_to_frame(self):
+        pass
+    
+    # ======================================================================================
+    #                                     General Utilities
+    # ======================================================================================
+    
     def mouse_wheel_up_current_file(self, event):
         if self.notebook.index("current") == 1:
             self.topic_sub_frame._parent_canvas.yview_scroll(int(-2), "units")
+        elif self.notebook.index("current") == 4:
+            self.plan_sub_frame._parent_canvas.yview_scroll(int(-2), "units")
     
     def mouse_wheel_down_current_file(self, event):
         if self.notebook.index("current") == 1:
             self.topic_sub_frame._parent_canvas.yview_scroll(int(2), "units")
+        elif self.notebook.index("current") == 4:
+            self.plan_sub_frame._parent_canvas.yview_scroll(int(2), "units")
 
 def main(args=None):
     rclpy.init(args=args)
