@@ -16,17 +16,23 @@ import tkinter as tk
 from tktooltip import ToolTip
 from tkinter import ttk, filedialog
 from functools import partial
-from PIL import Image
+from PIL import Image, ImageTk
 from rclpy.node import Node
 import threading
 from aprs_interfaces.srv import MoveToNamedPose, Pick, Place, GenerateInitState, GeneratePlan
 from aprs_interfaces.action import ExecutePlan
+from aprs_interfaces.msg import Tray, Trays
+from sensor_msgs.msg import Image as ImageMsg
+from cv_bridge import CvBridge
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
-# from industrial_msgs.msg import RobotStatus
+from industrial_msgs.msg import RobotStatus
 import os
 from rclpy.executors import MultiThreadedExecutor
 from difflib import SequenceMatcher
 from rclpy.action import ActionClient
+import numpy as np
+from copy import deepcopy
+import cv2
 
 FRAMEWIDTH=700
 FRAMEHEIGHT=900
@@ -74,6 +80,15 @@ class GUI_CLASS(Node):
         self.temp_vars = []
         
         self.available_topics = self.get_avalailable_topics()
+        
+        # Map variables
+        self.fanuc_trays_info = None
+        self.motoman_trays_info = None
+        self.teach_trays_info = None
+        
+        # Live video variables
+        self.most_recent_frames = {"floor_robot": None, "ceiling_robot": None}
+        self.bridge = CvBridge()
 
         # Connection to robots
         self.connections = {robot: ctk.IntVar() for robot in ROBOTS}
@@ -83,6 +98,35 @@ class GUI_CLASS(Node):
             var.trace_add('write', partial(self.update_connection_label, robot))
 
         # ROS Subscriptions
+        self.fanuc_trays_sub_ = self.create_subscription(
+            Trays,
+            '/fanuc/trays_info',
+            self.fanuc_trays_cb_,
+            10
+        )
+        self.motoman_trays_sub_ = self.create_subscription(
+            Trays,
+            '/motoman/trays_info',
+            self.motoman_trays_cb_,
+            10
+        )
+        self.teach_trays_sub_ = self.create_subscription(
+            Trays,
+            '/teach/trays_info',
+            self.teach_trays_cb_,
+            10
+        )
+        
+        # Cameras
+        self._floor_robot_cam_sub = self.create_subscription(ImageMsg, 
+                                                             '/ariac/sensors/floor_robot_camera/rgb_image', 
+                                                             self.floor_robot_image_cb, 
+                                                             rclpy.qos.qos_profile_sensor_data)
+        
+        self._ceiling_robot_cam_sub = self.create_subscription(ImageMsg, 
+                                                             '/ariac/sensors/ceiling_robot_camera/rgb_image', 
+                                                             self.ceiling_robot_image_cb, 
+                                                             rclpy.qos.qos_profile_sensor_data)
         
         qos_profile = QoSProfile(
             reliability=QoSReliabilityPolicy.BEST_EFFORT,
@@ -140,8 +184,19 @@ class GUI_CLASS(Node):
         
         self.fanuc_frame = ctk.CTkFrame(self.notebook, width=FRAMEWIDTH, height=FRAMEHEIGHT)
         self.fanuc_frame.pack(fill='both', expand=True)
-        self.notebook.add(self.fanuc_frame)
+        self.notebook.add(self.fanuc_frame, text="Fanuc")
         self.add_fanuc_widgets_to_frame()
+        
+        self.teach_frame = ctk.CTkFrame(self.notebook, width=FRAMEWIDTH, height=FRAMEHEIGHT)
+        self.teach_frame.pack(fill='both', expand=True)
+        self.notebook.add(self.teach_frame, text="Teach Table")
+        self.add_teach_widgets_to_frame()
+        
+        self.live_video_frame = ctk.CTkFrame(self.notebook, width=FRAMEWIDTH, height=FRAMEHEIGHT)
+        self.live_video_frame.pack(fill='both', expand=True)
+        self.notebook.add(self.live_video_frame, text="Live video")
+        self.update_video_var = ctk.IntVar(value=0)
+        self.add_live_video_widgets_to_frame()
         
         self.notebook.grid(pady=10, column=LEFT_COLUMN, columnspan = 2, sticky=tk.E+tk.W+tk.N+tk.S)
         
@@ -169,7 +224,7 @@ class GUI_CLASS(Node):
         self.topics_frame.grid_columnconfigure(10, weight=1)
         
         current_topic_selection = ctk.StringVar()
-        current_topic_selection.set(self.available_topics[0])
+        current_topic_selection.set("")
         topic_menu = ctk.CTkComboBox(self.topics_frame, variable=current_topic_selection, values=self.available_topics)
         topic_menu.grid(column = LEFT_COLUMN, row = 2, pady = 15)
         
@@ -372,6 +427,59 @@ class GUI_CLASS(Node):
     def add_fanuc_widgets_to_frame(self):
         pass
     
+    # ======================================================================================
+    #                                     Teach Table Tab
+    # ======================================================================================
+    def add_teach_widgets_to_frame(self):
+        pass
+    
+    # ======================================================================================
+    #                                        Callbacks
+    # ======================================================================================
+    def fanuc_trays_cb_(self, msg):
+        self.motoman_trays_info = msg
+    
+    def motoman_trays_cb_(self, msg):
+        self.motoman_trays_info = msg
+    
+    def teach_trays_cb_(self, msg):
+        self.teach_trays_info = msg
+    
+    # ======================================================================================
+    #                                        Callbacks
+    # ======================================================================================
+    def add_live_video_widgets_to_frame(self):
+        self.live_video_frame.grid_rowconfigure(0, weight=1)
+        self.live_video_frame.grid_rowconfigure(100, weight=1)
+        self.live_video_frame.grid_columnconfigure(0, weight=1)
+        self.live_video_frame.grid_columnconfigure(10, weight=1)
+        
+        camera_types = [cam for cam in self.most_recent_frames.keys()]
+        self.camera_selection = ctk.StringVar(value=camera_types[0])
+        
+        ctk.CTkLabel(self.live_video_frame, text="Select the camera you would like to view").grid(column=MIDDLE_COLUMN, row=1)
+        
+        camera_selection_menu = ctk.CTkOptionMenu(self.live_video_frame, variable=self.camera_selection, values=camera_types)
+        camera_selection_menu.grid(column=MIDDLE_COLUMN, row=2, pady=10)
+        
+        self.img_label = ctk.CTkLabel(self.live_video_frame, text="")
+        self.img_label.grid(column=MIDDLE_COLUMN, row=3)
+        
+        self.update_video_var.trace_add("write", self.update_image_label)
+        
+    def update_image_label(self, _, __, ___):
+        cv_image = self.bridge.imgmsg_to_cv2(self.most_recent_frames[self.camera_selection.get()], desired_encoding="passthrough")
+        frame_to_show = Image.fromarray(cv_image)
+        self.img_label.configure(image=ctk.CTkImage(frame_to_show, size=(640, 480)))
+        # self.img_label.configure(text="AFTER")
+        
+    def floor_robot_image_cb(self, msg: ImageMsg):
+        self.most_recent_frames["floor_robot"] = msg
+        self.update_video_var.set((self.update_video_var.get()+1)%2)
+    
+    def ceiling_robot_image_cb(self, msg: ImageMsg):
+        self.most_recent_frames["ceiling_robot"] = msg
+        self.update_video_var.set((self.update_video_var.get()+1)%2)
     # ======================================================================================
     #                                     General Utilities
     # ======================================================================================
