@@ -18,6 +18,7 @@ from tkinter import ttk, filedialog
 from functools import partial
 from PIL import Image, ImageTk
 from rclpy.node import Node
+from example_interfaces.srv import Trigger
 import threading
 from aprs_interfaces.srv import MoveToNamedPose, Pick, Place, GenerateInitState, GeneratePlan
 from aprs_interfaces.action import ExecutePlan
@@ -63,15 +64,15 @@ OBJECT_TYPES = {
 }
 
 GEAR_COLORS_AND_SIZES = {
-    "small_gear": ("yellow",15),
-    "medium_gear": ("orange",25),
-    "large_gear": ("green", 35)
+    "small_gear": ("yellow",10),
+    "medium_gear": ("orange", 13),
+    "large_gear": ("green", 16)
 }
 
 GEAR_TRAY_COLORS_AND_SIZES = {
-    "small_gear_tray": ("red", (36, 36)),
-    "medium_gear_tray": ("blue", (57,57)),
-    "large_gear_tray": ("red", (78, 40))
+    "small_gear_tray": ("red", (26, 26)),
+    "medium_gear_tray": ("blue", (44,44)),
+    "large_gear_tray": ("red", (30, 60))
 }
 
 class GUI_CLASS(Node):
@@ -125,19 +126,19 @@ class GUI_CLASS(Node):
         # ROS Subscriptions
         self.fanuc_trays_sub_ = self.create_subscription(
             Objects,
-            '/fanuc/vision_objects',
+            '/fanuc_vision_objects',
             self.fanuc_trays_cb_,
             10
         )
         self.motoman_trays_sub_ = self.create_subscription(
             Objects,
-            '/motoman/vision_objects',
+            '/motoman_vision_objects',
             self.motoman_trays_cb_,
             10
         )
         self.teach_trays_sub_ = self.create_subscription(
             Objects,
-            '/teach/vision_objects',
+            '/teach_vision_objects',
             self.teach_trays_cb_,
             10
         )
@@ -168,6 +169,11 @@ class GUI_CLASS(Node):
         self.generate_plan_client = self.create_client(
             GeneratePlan,
             "/generate_plan"
+        )
+        
+        self.update_vision_system_client = self.create_client(
+            Trigger,
+            "/update_vision_data"
         )
         
         # Ros action clients
@@ -447,6 +453,7 @@ class GUI_CLASS(Node):
         
         self.two_d_vision_canvas = Canvas(self.two_d_vision_frame, width = 700, height=600, bd = 0, highlightthickness=0)
         self.two_d_vision_canvas.grid(row = 3,column = MIDDLE_COLUMN, sticky = "we")
+        # self.two_d_vision_canvas.create_oval(250,250,350,350, fill="black")
         
         self.selected_vision_area.trace_add("write", partial(self.update_two_d_canvas, "change_in_selection"))
         for area in self.vision_areas:
@@ -457,18 +464,28 @@ class GUI_CLASS(Node):
         if new_frame != "change_in_selection" and new_frame != vision_area:
             return
         else:
-            self.two_d_vision_canvas.delete("all")
-            for o in self.vision_objects[vision_area].objects:
-                o: Object
-                pose = o.pose_stamped.pose
-                object_type = OBJECT_TYPES[o.object_identifier]
-                x, y = self.pose_to_canvas_coords(pose)
-                if "gear" in object_type:
-                    self.draw_gear(x, y, object_type)
-                elif "gear_tray" in object_type:
-                    self.draw_gear_tray(x, y, object_type)
-                else:
-                    self.draw_kitting_tray(x, y, object_type)
+            if len(self.vision_objects[vision_area].objects) > 0:
+                self.two_d_vision_canvas.delete("all")
+                new_objects = []
+                for o in self.vision_objects[vision_area].objects: # Orders trays last so they are put on the canvas above the trays
+                    object_type = OBJECT_TYPES[o.object_identifier]
+                    if "tray" in object_type:
+                        new_objects = [o] + new_objects
+                    else:
+                        new_objects.append(o)
+                        
+                for o in new_objects:
+                    o: Object
+                    pose = o.pose_stamped.pose
+                    object_type = OBJECT_TYPES[o.object_identifier]
+                    x, y = self.pose_to_canvas_coords(pose)
+                    if "gear_tray" in object_type:
+                        self.draw_gear_tray(x, y, object_type)
+                    elif "gear" in object_type:
+                        self.draw_gear(x, y, object_type)
+                    else:
+                        self.draw_kitting_tray(x, y, object_type)
+        self.call_update_vision_data()
     
     def draw_gear(self, center_x, center_y, gear_type):
         color, size = GEAR_COLORS_AND_SIZES[gear_type]
@@ -476,15 +493,27 @@ class GUI_CLASS(Node):
     
     def draw_gear_tray(self, center_x, center_y, tray_type):
         color, size = GEAR_TRAY_COLORS_AND_SIZES[tray_type]
-        self.two_d_vision_canvas.create_rectangle(center_x-size[0], center_y-size[1], center_x+size[0], center_y+size[1], fille=color)
+        self.two_d_vision_canvas.create_rectangle(center_x-size[0], center_y-size[1], center_x+size[0], center_y+size[1], fill=color)
     
     def draw_kitting_tray(self, center_x, center_y, tray_type):
-        self.two_d_vision_canvas.create_rectangle(center_x-50, center_y-50, center_x+50, center_y+50, fill="purple")
+        self.two_d_vision_canvas.create_rectangle(center_x-50, center_y-50, center_x+50, center_y+50, fill="brown")
     
     def pose_to_canvas_coords(self, pose: Pose):
-        x = int(pose.position.x)*100
-        y = int(pose.position.y)*100
+        print(pose.position.x)
+        x = int((pose.position.x+0.2)*400)
+        y = int((pose.position.y+0.2)*400)
         return x, y
+    
+    def call_update_vision_data(self):
+        """Updates the vision data
+        """
+        request = Trigger.Request()
+
+        future = self.update_vision_system_client.call_async(request)
+        
+        response: Trigger.Response = future.result()
+        
+        self.get_logger().info(f"Updated vision data")
     
     # ======================================================================================
     #                                        Callbacks
