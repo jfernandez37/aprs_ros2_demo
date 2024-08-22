@@ -21,7 +21,7 @@ from rclpy.node import Node
 import threading
 from aprs_interfaces.srv import MoveToNamedPose, Pick, Place, GenerateInitState, GeneratePlan
 from aprs_interfaces.action import ExecutePlan
-from aprs_interfaces.msg import Tray, Trays, Objects
+from aprs_interfaces.msg import Tray, Trays, Objects, Object
 from sensor_msgs.msg import Image as ImageMsg
 from cv_bridge import CvBridge
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
@@ -33,6 +33,7 @@ from rclpy.action import ActionClient
 import numpy as np
 from copy import deepcopy
 import cv2
+from geometry_msgs.msg import Pose, PoseStamped
 
 FRAMEWIDTH=700
 FRAMEHEIGHT=900
@@ -49,6 +50,29 @@ SERVICE_OBJ = {"MoveToNamedPose": MoveToNamedPose,
                "Place": Place}
 
 ROBOTS = ["fanuc", "motoman"]
+
+OBJECT_TYPES = {
+    10: "small_gear",
+    11: "medium_gear",
+    12: "large_gear",
+    13: "small_gear_tray",
+    14: "medium_gear_tray",
+    15: "large_gear_tray",
+    16: "m2l1_kit_tray",
+    17: "s2l2_kit_tray",
+}
+
+GEAR_COLORS_AND_SIZES = {
+    "small_gear": ("yellow",15),
+    "medium_gear": ("orange",25),
+    "large_gear": ("green", 35)
+}
+
+GEAR_TRAY_COLORS_AND_SIZES = {
+    "small_gear_tray": ("red", (36, 36)),
+    "medium_gear_tray": ("blue", (57,57)),
+    "large_gear_tray": ("red", (78, 40))
+}
 
 class GUI_CLASS(Node):
     def __init__(self):
@@ -83,7 +107,7 @@ class GUI_CLASS(Node):
         
         # Map variables
         self.vision_areas = ["fanuc", "motoman", "teach"]
-        self.vision_objects = {area: [] for area in self.vision_areas}
+        self.vision_objects = {area: Objects() for area in self.vision_areas}
         self.update_vision_map_vars = {area: ctk.IntVar(value=0) for area in self.vision_areas}
         self.selected_vision_area = ctk.StringVar(value=self.vision_areas[0])
         
@@ -434,8 +458,33 @@ class GUI_CLASS(Node):
             return
         else:
             self.two_d_vision_canvas.delete("all")
-            for o in self.vision_objects[vision_area]:
-                pass
+            for o in self.vision_objects[vision_area].objects:
+                o: Object
+                pose = o.pose_stamped.pose
+                object_type = OBJECT_TYPES[o.object_identifier]
+                x, y = self.pose_to_canvas_coords(pose)
+                if "gear" in object_type:
+                    self.draw_gear(x, y, object_type)
+                elif "gear_tray" in object_type:
+                    self.draw_gear_tray(x, y, object_type)
+                else:
+                    self.draw_kitting_tray(x, y, object_type)
+    
+    def draw_gear(self, center_x, center_y, gear_type):
+        color, size = GEAR_COLORS_AND_SIZES[gear_type]
+        self.two_d_vision_canvas.create_oval(center_x-size, center_y-size, center_x+size, center_y+size, fill=color)
+    
+    def draw_gear_tray(self, center_x, center_y, tray_type):
+        color, size = GEAR_TRAY_COLORS_AND_SIZES[tray_type]
+        self.two_d_vision_canvas.create_rectangle(center_x-size[0], center_y-size[1], center_x+size[0], center_y+size[1], fille=color)
+    
+    def draw_kitting_tray(self, center_x, center_y, tray_type):
+        self.two_d_vision_canvas.create_rectangle(center_x-50, center_y-50, center_x+50, center_y+50, fill="purple")
+    
+    def pose_to_canvas_coords(self, pose: Pose):
+        x = int(pose.position.x)*100
+        y = int(pose.position.y)*100
+        return x, y
     
     # ======================================================================================
     #                                        Callbacks
@@ -476,9 +525,10 @@ class GUI_CLASS(Node):
         self.camera_selection.trace_add("write", self.update_image_label)
         
     def update_image_label(self, _, __, ___):
-        cv_image = self.bridge.imgmsg_to_cv2(self.most_recent_frames[self.camera_selection.get()], desired_encoding="passthrough")
-        frame_to_show = Image.fromarray(cv_image)
-        self.img_label.configure(image=ctk.CTkImage(frame_to_show, size=(640, 480)))
+        if self.most_recent_frames[self.camera_selection.get()]!=None:
+            cv_image = self.bridge.imgmsg_to_cv2(self.most_recent_frames[self.camera_selection.get()], desired_encoding="passthrough")
+            frame_to_show = Image.fromarray(cv_image)
+            self.img_label.configure(image=ctk.CTkImage(frame_to_show, size=(640, 480)))
         
     def floor_robot_image_cb(self, msg: ImageMsg):
         self.most_recent_frames["floor_robot"] = msg
