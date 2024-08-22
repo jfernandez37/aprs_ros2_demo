@@ -21,7 +21,7 @@ from rclpy.node import Node
 import threading
 from aprs_interfaces.srv import MoveToNamedPose, Pick, Place, GenerateInitState, GeneratePlan
 from aprs_interfaces.action import ExecutePlan
-from aprs_interfaces.msg import Tray, Trays
+from aprs_interfaces.msg import Tray, Trays, Objects
 from sensor_msgs.msg import Image as ImageMsg
 from cv_bridge import CvBridge
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
@@ -82,9 +82,10 @@ class GUI_CLASS(Node):
         self.available_topics = self.get_avalailable_topics()
         
         # Map variables
-        self.fanuc_trays_info = None
-        self.motoman_trays_info = None
-        self.teach_trays_info = None
+        self.vision_areas = ["fanuc", "motoman", "teach"]
+        self.vision_objects = {area: [] for area in self.vision_areas}
+        self.update_vision_map_vars = {area: ctk.IntVar(value=0) for area in self.vision_areas}
+        self.selected_vision_area = ctk.StringVar(value=self.vision_areas[0])
         
         # Live video variables
         self.most_recent_frames = {"floor_robot": None, "ceiling_robot": None}
@@ -99,20 +100,20 @@ class GUI_CLASS(Node):
 
         # ROS Subscriptions
         self.fanuc_trays_sub_ = self.create_subscription(
-            Trays,
-            '/fanuc/trays_info',
+            Objects,
+            '/fanuc/vision_objects',
             self.fanuc_trays_cb_,
             10
         )
         self.motoman_trays_sub_ = self.create_subscription(
-            Trays,
-            '/motoman/trays_info',
+            Objects,
+            '/motoman/vision_objects',
             self.motoman_trays_cb_,
             10
         )
         self.teach_trays_sub_ = self.create_subscription(
-            Trays,
-            '/teach/trays_info',
+            Objects,
+            '/teach/vision_objects',
             self.teach_trays_cb_,
             10
         )
@@ -177,20 +178,11 @@ class GUI_CLASS(Node):
         self.notebook.add(self.init_plan_execute_frame, text="Init Plan Execute")
         self.add_init_plan_execute_widgets_to_frame()
         
-        self.motoman_frame = ctk.CTkFrame(self.notebook, width=FRAMEWIDTH, height=FRAMEHEIGHT)
-        self.motoman_frame.pack(fill='both', expand=True)
-        self.notebook.add(self.motoman_frame, text="Motoman")
-        self.add_motoman_widgets_to_frame()
         
-        self.fanuc_frame = ctk.CTkFrame(self.notebook, width=FRAMEWIDTH, height=FRAMEHEIGHT)
-        self.fanuc_frame.pack(fill='both', expand=True)
-        self.notebook.add(self.fanuc_frame, text="Fanuc")
-        self.add_fanuc_widgets_to_frame()
-        
-        self.teach_frame = ctk.CTkFrame(self.notebook, width=FRAMEWIDTH, height=FRAMEHEIGHT)
-        self.teach_frame.pack(fill='both', expand=True)
-        self.notebook.add(self.teach_frame, text="Teach Table")
-        self.add_teach_widgets_to_frame()
+        self.two_d_vision_frame = ctk.CTkFrame(self.notebook, width=FRAMEWIDTH, height=FRAMEHEIGHT)
+        self.two_d_vision_frame.pack(fill='both', expand=True)
+        self.notebook.add(self.two_d_vision_frame, text="2d Vision")
+        self.add_two_d_vision_widgets_to_frame()
         
         self.live_video_frame = ctk.CTkFrame(self.notebook, width=FRAMEWIDTH, height=FRAMEHEIGHT)
         self.live_video_frame.pack(fill='both', expand=True)
@@ -416,37 +408,52 @@ class GUI_CLASS(Node):
         # future.add_done_callback(self.goal_response_callback)
         
     # ======================================================================================
-    #                                       Motoman Tab
-    # ======================================================================================
-    def add_motoman_widgets_to_frame(self):
-        pass
-    
-    # ======================================================================================
     #                                        Fanuc Tab
     # ======================================================================================
-    def add_fanuc_widgets_to_frame(self):
-        pass
-    
-    # ======================================================================================
-    #                                     Teach Table Tab
-    # ======================================================================================
-    def add_teach_widgets_to_frame(self):
-        pass
+    def add_two_d_vision_widgets_to_frame(self):
+        self.two_d_vision_frame.grid_rowconfigure(0, weight=1)
+        self.two_d_vision_frame.grid_rowconfigure(100, weight=1)
+        self.two_d_vision_frame.grid_columnconfigure(0, weight=1)
+        self.two_d_vision_frame.grid_columnconfigure(10, weight=1)
+        
+        ctk.CTkLabel(self.two_d_vision_frame, text="Select the vision area you would like to view:").grid(column = MIDDLE_COLUMN, row = 1)
+        
+        vision_area_menu = ctk.CTkOptionMenu(self.two_d_vision_frame, variable=self.selected_vision_area, values=self.vision_areas)
+        vision_area_menu.grid(column = MIDDLE_COLUMN, row = 2, pady = 10)
+        
+        self.two_d_vision_canvas = Canvas(self.two_d_vision_frame, width = 700, height=600, bd = 0, highlightthickness=0)
+        self.two_d_vision_canvas.grid(row = 3,column = MIDDLE_COLUMN, sticky = "we")
+        
+        self.selected_vision_area.trace_add("write", partial(self.update_two_d_canvas, "change_in_selection"))
+        for area in self.vision_areas:
+            self.update_vision_map_vars[area].trace_add("write", partial(self.update_two_d_canvas, area))
+        
+    def update_two_d_canvas(self, new_frame: str, _, __, ___):
+        vision_area = self.selected_vision_area.get()
+        if new_frame != "change_in_selection" and new_frame != vision_area:
+            return
+        else:
+            self.two_d_vision_canvas.delete("all")
+            for o in self.vision_objects[vision_area]:
+                pass
     
     # ======================================================================================
     #                                        Callbacks
     # ======================================================================================
     def fanuc_trays_cb_(self, msg):
-        self.motoman_trays_info = msg
+        self.vision_objects["fanuc"] = msg
+        self.update_vision_map_vars["fanuc"].set((self.update_vision_map_vars["fanuc"].get()+1)%2)
     
     def motoman_trays_cb_(self, msg):
-        self.motoman_trays_info = msg
+        self.vision_objects["motoman"] = msg
+        self.update_vision_map_vars["motoman"].set((self.update_vision_map_vars["motoman"].get()+1)%2)
     
     def teach_trays_cb_(self, msg):
-        self.teach_trays_info = msg
+        self.vision_objects["teach"] = msg
+        self.update_vision_map_vars["teach"].set((self.update_vision_map_vars["teach"].get()+1)%2)
     
     # ======================================================================================
-    #                                        Callbacks
+    #                                        Live Videos
     # ======================================================================================
     def add_live_video_widgets_to_frame(self):
         self.live_video_frame.grid_rowconfigure(0, weight=1)
@@ -466,12 +473,12 @@ class GUI_CLASS(Node):
         self.img_label.grid(column=MIDDLE_COLUMN, row=3)
         
         self.update_video_var.trace_add("write", self.update_image_label)
+        self.camera_selection.trace_add("write", self.update_image_label)
         
     def update_image_label(self, _, __, ___):
         cv_image = self.bridge.imgmsg_to_cv2(self.most_recent_frames[self.camera_selection.get()], desired_encoding="passthrough")
         frame_to_show = Image.fromarray(cv_image)
         self.img_label.configure(image=ctk.CTkImage(frame_to_show, size=(640, 480)))
-        # self.img_label.configure(text="AFTER")
         
     def floor_robot_image_cb(self, msg: ImageMsg):
         self.most_recent_frames["floor_robot"] = msg
