@@ -35,25 +35,37 @@ class VisionUtility():
         while b'\n\r' not in self.buffer:
             data = s.recv(1024)
             self.buffer += data
-        line,sep,self.buffer = self.buffer.partition(b'\n\r')
+        line, _ , self.buffer = self.buffer.partition(b'\n\r')
         line.decode()
         raw_string = line.decode('ascii')
 
-        regexp = re.compile('([\\w.-]*,){6}')
+        all_items = raw_string.split(',')
 
-        tmp_string = raw_string
         part_locations = []
-        while result := regexp.match(tmp_string):
-            entry = result.group().split(',')[0:6]
-            if all(entry):
-                name = entry[0]
-                rotation = float(entry[1])
-                x = float(entry[2]) * 0.001
-                y = float(entry[3]) * 0.001
-                type = entry[-1]
-                part_locations.append((name, rotation, x, y, type))
-            tmp_string = tmp_string.replace(result.group(), '')
+
+        while len(all_items) >= 6:
+            name, rotation, x, y, _, item_type = all_items[:6]
+
+            try:
+                rotation = float(rotation)
+            except ValueError:
+                rotation = 0.0
+
+            try:
+                x = float(x) * 0.001
+            except ValueError:
+                x = 0.0
+
+            try:
+                y = float(y) * 0.001
+            except ValueError:
+                y = 0.0
             
+            if y != 0.0 and x != 0.0:
+                part_locations.append((name, rotation, x, y, item_type))
+            
+            all_items = all_items[6:]
+        
         s.close()
 
         return part_locations

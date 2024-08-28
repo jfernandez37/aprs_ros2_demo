@@ -451,8 +451,11 @@ class GUI_CLASS(Node):
         vision_area_menu = ctk.CTkOptionMenu(self.two_d_vision_frame, variable=self.selected_vision_area, values=self.vision_areas)
         vision_area_menu.grid(column = MIDDLE_COLUMN, row = 2, pady = 10)
         
+        self.vision_information_label = ctk.CTkLabel(self.two_d_vision_frame, text="No data available yet")
+        self.vision_information_label.grid(column = MIDDLE_COLUMN, row=3, pady = 10)
+        
         self.two_d_vision_canvas = Canvas(self.two_d_vision_frame, width = 700, height=600, bd = 0, highlightthickness=0)
-        self.two_d_vision_canvas.grid(row = 3,column = MIDDLE_COLUMN, sticky = "we")
+        self.two_d_vision_canvas.grid(row = 4,column = MIDDLE_COLUMN, sticky = "we")
         # self.two_d_vision_canvas.create_oval(250,250,350,350, fill="black")
         
         self.selected_vision_area.trace_add("write", partial(self.update_two_d_canvas, "change_in_selection"))
@@ -461,9 +464,24 @@ class GUI_CLASS(Node):
         
     def update_two_d_canvas(self, new_frame: str, _, __, ___):
         vision_area = self.selected_vision_area.get()
+        gear_tray_count = 0
+        kit_tray_count = 0
+        gear_count = 0
+        if len(self.vision_objects[vision_area].objects) > 0:
+            for o in self.vision_objects[vision_area].objects: # Orders trays last so they are put on the canvas above the trays
+                object_type = OBJECT_TYPES[o.object_identifier]
+                if "tray" in object_type:
+                    if "gear" in object_type:
+                        gear_tray_count += 1
+                    else:
+                        kit_tray_count += 1
+                else:
+                    gear_count += 1
+            self.vision_information_label.configure(text=f"Objects found in {vision_area}:\nGears: {gear_count}\nGear trays: {gear_tray_count}\nKit trays: {kit_tray_count}")
         if new_frame != "change_in_selection" and new_frame != vision_area:
             return
         else:
+            find_repeat_positions = []
             if len(self.vision_objects[vision_area].objects) > 0:
                 self.two_d_vision_canvas.delete("all")
                 new_objects = []
@@ -473,12 +491,15 @@ class GUI_CLASS(Node):
                         new_objects = [o] + new_objects
                     else:
                         new_objects.append(o)
-                        
                 for o in new_objects:
                     o: Object
                     pose = o.pose_stamped.pose
                     object_type = OBJECT_TYPES[o.object_identifier]
-                    x, y = self.pose_to_canvas_coords(pose)
+                    x, y = self.pose_to_canvas_coords(pose, vision_area)
+                    if (x,y) in find_repeat_positions:
+                        print(x,",",y,"repeated")
+                    else:
+                        find_repeat_positions.append((x,y))
                     if "gear_tray" in object_type:
                         self.draw_gear_tray(x, y, object_type)
                     elif "gear" in object_type:
@@ -498,10 +519,10 @@ class GUI_CLASS(Node):
     def draw_kitting_tray(self, center_x, center_y, tray_type):
         self.two_d_vision_canvas.create_rectangle(center_x-50, center_y-50, center_x+50, center_y+50, fill="brown")
     
-    def pose_to_canvas_coords(self, pose: Pose):
-        print(pose.position.x)
-        x = int((pose.position.x+0.2)*400)
-        y = int((pose.position.y+0.2)*400)
+    def pose_to_canvas_coords(self, pose: Pose, area):
+        x = int((pose.position.x+0.2) * 400)
+        y = 600 - int((pose.position.y+0.2)*(400)) - (300 if area == "motoman" else 0)
+        print(pose.position.y, y)
         return x, y
     
     def call_update_vision_data(self):
