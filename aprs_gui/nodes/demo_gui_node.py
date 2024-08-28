@@ -35,6 +35,9 @@ import numpy as np
 from copy import deepcopy
 import cv2
 from geometry_msgs.msg import Pose, PoseStamped
+from copy import copy
+from math import cos, sin, pi
+from random import random
 
 FRAMEWIDTH=700
 FRAMEHEIGHT=900
@@ -72,7 +75,7 @@ GEAR_COLORS_AND_SIZES = {
 GEAR_TRAY_COLORS_AND_SIZES = {
     "small_gear_tray": ("red", (26, 26)),
     "medium_gear_tray": ("blue", (44,44)),
-    "large_gear_tray": ("red", (30, 60))
+    "large_gear_tray": ("red", (20, 45))
 }
 
 class GUI_CLASS(Node):
@@ -468,7 +471,7 @@ class GUI_CLASS(Node):
         kit_tray_count = 0
         gear_count = 0
         if len(self.vision_objects[vision_area].objects) > 0:
-            for o in self.vision_objects[vision_area].objects: # Orders trays last so they are put on the canvas above the trays
+            for o in self.vision_objects[vision_area].objects:
                 object_type = OBJECT_TYPES[o.object_identifier]
                 if "tray" in object_type:
                     if "gear" in object_type:
@@ -514,15 +517,23 @@ class GUI_CLASS(Node):
     
     def draw_gear_tray(self, center_x, center_y, tray_type):
         color, size = GEAR_TRAY_COLORS_AND_SIZES[tray_type]
-        self.two_d_vision_canvas.create_rectangle(center_x-size[0], center_y-size[1], center_x+size[0], center_y+size[1], fill=color)
+        points = [center_x-size[0], center_y-size[1], center_x-size[0], center_y+size[1], center_x+size[0], center_y+size[1], center_x+size[0], center_y-size[1]]
+        self.two_d_vision_canvas.create_polygon(points, fill=color)
     
     def draw_kitting_tray(self, center_x, center_y, tray_type):
-        self.two_d_vision_canvas.create_rectangle(center_x-50, center_y-50, center_x+50, center_y+50, fill="brown")
-    
+        points = [center_x-35,center_y-43, center_x+16,center_y-43, center_x+35,center_y-20, center_x+35,center_y+20, center_x+16,center_y+43, center_x-35,center_y+43]
+        self.two_d_vision_canvas.create_polygon(points, fill="brown")
+        
+    def rotate_shape(self, center_x, center_y, points, rotation):
+        for i in range(0,len(points),2):
+            original_x = copy(points[i] - center_x)
+            original_y = copy(points[i+1] - center_y)
+            points[i] = int((original_x * cos(rotation) + original_y * sin(rotation))) + center_x
+            points[i+1] = int((-1 * original_x * sin(rotation) + original_y * cos(rotation))) + center_y
+            
     def pose_to_canvas_coords(self, pose: Pose, area):
         x = int((pose.position.x+0.2) * 400)
         y = 600 - int((pose.position.y+0.2)*(400)) - (300 if area == "motoman" else 0)
-        print(pose.position.y, y)
         return x, y
     
     def call_update_vision_data(self):
