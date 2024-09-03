@@ -29,12 +29,11 @@ def launch_setup(context, *args, **kwargs):
         package="controller_manager",
         executable="ros2_control_node",
         parameters=[
-            robot_description,
             robot_controllers],
         output="both",
-        # remappings=[
-        #     ("~/robot_description", "/robot_description"),
-        # ],
+        remappings=[
+            ("~/robot_description", "/robot_description"),
+        ],
     )
     
     robot_state_publisher = Node(
@@ -90,10 +89,10 @@ def launch_setup(context, *args, **kwargs):
     # )    
 
     nodes_to_start = [
-        # control_node,
+        control_node,
         robot_state_publisher,
-        # joint_state_broadcaster,
-        # joint_trajectory_controller,
+        joint_state_broadcaster,
+        joint_trajectory_controller,
         # motoman_gripper_control,
         # rviz_node
     ]

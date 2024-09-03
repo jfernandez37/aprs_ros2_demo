@@ -4,7 +4,7 @@
     <xacro:include filename="$(find motoman_description)/urdf/motoman_sia20_macro.xacro"/>
 
     <!-- Include ROS2 Control macro -->
-    <!-- <xacro:include filename="$(find motoman_description)/urdf/motoman.ros2_control.xacro"/> -->
+    <xacro:include filename="$(find motoman_description)/urdf/motoman.ros2_control.xacro"/>
 
     <!-- Inclue gripper macro -->
     <!-- <xacro:include filename="$(find aprs_description)/urdf/vacuum_gripper/vacuum_grippper_macro.xacro"/> -->
@@ -14,7 +14,7 @@
     <xacro:motoman_sia20d parent="world"/>
 
     <!-- Run motoman macro -->
-    <!-- <xacro:motoman_ros2_control name="motoman"/> -->
+    <xacro:motoman_ros2_control name="motoman"/>
 
     <!-- Run gripper macro -->
     <!-- <xacro:vacuum_gripper
