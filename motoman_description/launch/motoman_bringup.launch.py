@@ -92,7 +92,7 @@ def launch_setup(context, *args, **kwargs):
         control_node,
         robot_state_publisher,
         joint_state_broadcaster,
-        joint_trajectory_controller,
+        # joint_trajectory_controller,
         # motoman_gripper_control,
         # rviz_node
     ]
