@@ -11,13 +11,13 @@ controller_manager:
 joint_trajectory_controller:
   ros__parameters:
     joints:
-      - group_1/joint_5
-      - group_1/joint_7
-      - group_1/joint_2    
-      - group_1/joint_4
-      - group_1/joint_1
-      - group_1/joint_6
-      - group_1/joint_3
+      - joint_s
+      - joint_l
+      - joint_e    
+      - joint_u
+      - joint_r
+      - joint_b
+      - joint_t
     command_interfaces:
       - position
     state_interfaces:
